@@ -3,8 +3,8 @@
  * Plugin Name:     Easy Digital Downloads - CoinPayments Gateway
  * Plugin URI:      http://wordpress.org/plugins/easy-digital-downloads-coinpayments-gateway
  * Description:     Add support for CoinPayments to Easy Digital Downloads. This plugin is almost entirely based on code provided by <a href="https://www.coinpayments.net/index.php?cmd=merchant_tools&sub=plugins" target="_blank">CoinPayments</a>.
- * Version:         1.0.0
- * Author:          Daniel J Griffiths
+ * Version:         1.0.1
+ * Author:          Daniel J Griffiths & CoinPayments.net
  * Author URI:      http://ghost1227.com
  */
 
@@ -224,10 +224,11 @@ if( !class_exists( 'EDD_CoinPayments' ) ) {
             }
 
             // Calculate discount
+            /*
             $discounted_amount = $purchase_data['discount'];
 
             if( ! empty( $purchase_data['fees'] ) ) {
-                $i = empty( $i ) ? 1 : $i;
+                //$i = empty( $i ) ? 1 : $i;
                 foreach( $purchase_data['fees'] as $fee ) {
                     if( floatval( $fee['amount'] ) > '0' ) {
                         $coinpayments_args['amountf'] += $fee['amount'];
@@ -240,6 +241,7 @@ if( !class_exists( 'EDD_CoinPayments' ) ) {
 
             if( $discounted_amount > '0' )
                 $coinpayments_args['amountf'] -= $discounted_amount;
+                */
 
             // Add taxes to the cart
             if ( edd_use_taxes() )
