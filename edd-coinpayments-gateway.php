@@ -328,7 +328,7 @@ if( !class_exists( 'EDD_CoinPayments' ) ) {
 
             // Check the request method is POST
             if( isset( $_SERVER['REQUEST_METHOD'] ) && $_SERVER['REQUEST_METHOD'] != 'POST' ) {
-                edd_coinpayments_ipn_error( null, __( 'Request method not POST', 'edd-coinpayments' ) );
+                $this->edd_coinpayments_ipn_error( null, __( 'Request method not POST', 'edd-coinpayments' ) );
             }
     
             // Collect payment details
@@ -338,21 +338,39 @@ if( !class_exists( 'EDD_CoinPayments' ) ) {
             $status         = intval( $_POST['status'] );
             $status_text    = strtolower( $_POST['status_text'] );
             $currency       = strtolower( $_POST['currency1'] );
-
-            if( !isset( $_SERVER['PHP_AUTH_USER']) || !isset( $_SERVER['PHP_AUTH_PW'] ) ) {
-                edd_coinpayments_ipn_error( $payment_id, __( 'HTTP Auth user/pass not set!', 'edd-coinpayments' ) );
-            }
-
-            if( $_SERVER['PHP_AUTH_USER'] != $edd_options['edd_coinpayments_merchant'] || $_SERVER['PHP_AUTH_PW'] != $edd_options['edd_coinpayments_ipn_secret'] ) {
-                edd_coinpayments_ipn_error( $payment_id, __( 'HTTP Auth user/pass do not match! (check your merchant ID and IPN secret)', 'edd-coinpayments' ) );
-            }
-    
+            
+            if ( $_POST['ipn_mode'] == 'hmac' ) {
+							if (isset($_SERVER['HTTP_HMAC']) && !empty($_SERVER['HTTP_HMAC'])) {
+								$request = file_get_contents('php://input');
+								if ($request !== FALSE && !empty($request)) {
+									$hmac = hash_hmac("sha512", $request, trim($edd_options['edd_coinpayments_ipn_secret']));
+									if ($hmac != $_SERVER['HTTP_HMAC']) {
+										$this->edd_coinpayments_ipn_error( $payment_id, __( 'HMAC signature does not match', 'edd-coinpayments' ) );
+									}
+								} else {
+									$this->edd_coinpayments_ipn_error( $payment_id, __( 'Error reading POST data', 'edd-coinpayments' ) );
+								}
+							} else {
+								$this->edd_coinpayments_ipn_error( $payment_id, __( 'No HMAC signature sent.', 'edd-coinpayments' ) );
+							}
+            } else if ( $_POST['ipn_mode'] == 'httpauth' ) {
+	            if( !isset( $_SERVER['PHP_AUTH_USER']) || !isset( $_SERVER['PHP_AUTH_PW'] ) ) {
+	                $this->edd_coinpayments_ipn_error( $payment_id, __( 'HTTP Auth user/pass not set!', 'edd-coinpayments' ) );
+	            }
+	
+	            if( $_SERVER['PHP_AUTH_USER'] != $edd_options['edd_coinpayments_merchant'] || $_SERVER['PHP_AUTH_PW'] != $edd_options['edd_coinpayments_ipn_secret'] ) {
+	                $this->edd_coinpayments_ipn_error( $payment_id, __( 'HTTP Auth user/pass do not match! (check your merchant ID and IPN secret)', 'edd-coinpayments' ) );
+	            }
+	          } else {
+							$this->edd_coinpayments_ipn_error( $payment_id, __( 'Unknown IPN verification mode!', 'edd-coinpayments' ) );
+	          }
+	    
             if( $_POST['ipn_type'] != 'button' ) {
-                edd_coinpayments_ipn_error( $payment_id, __( 'ipn_type should be button', 'edd-coinpayments' ) );
+                $this->edd_coinpayments_ipn_error( $payment_id, __( 'ipn_type should be button', 'edd-coinpayments' ) );
             }
 
             if( $_POST['merchant'] != $edd_options['edd_coinpayments_merchant'] ) {
-                edd_coinpayments_ipn_error( $payment_id, __( 'merchant does not match', 'edd-coinpayments' ) );
+                $this->edd_coinpayments_ipn_error( $payment_id, __( 'merchant does not match', 'edd-coinpayments' ) );
             }
 
             // Retrieve the total purchase amount
@@ -362,7 +380,7 @@ if( !class_exists( 'EDD_CoinPayments' ) ) {
                 die( __( 'Payment already published', 'coinpayments' ) ); // Only complete payments once
 
             if( edd_get_payment_gateway( $payment_id ) != 'coinpayments' )
-                edd_coinpayments_ipn_error( $payment_id, __( 'Not a CoinPayments.net order!', 'edd-coinpayments' ) ); // this isn't a CoinPayments order
+                $this->edd_coinpayments_ipn_error( $payment_id, __( 'Not a CoinPayments.net order!', 'edd-coinpayments' ) ); // this isn't a CoinPayments order
 
             if( !edd_get_payment_user_email( $payment_id ) ) {
 
@@ -394,16 +412,16 @@ if( !class_exists( 'EDD_CoinPayments' ) ) {
 
             // Verify payment currency
             if( $currency != strtolower( edd_get_currency() ) ) {
-                edd_coinpayments_ipn_error( $payment_id, sprintf( __( 'Invalid currency in IPN response. IPN data: %s', 'edd-coinpayments' ), json_encode( $_POST ) ) );
+                $this->edd_coinpayments_ipn_error( $payment_id, sprintf( __( 'Invalid currency in IPN response. IPN data: %s', 'edd-coinpayments' ), json_encode( $_POST ) ) );
             }
 
             if( number_format( (float)$amount, 2 ) < number_format( (float)$payment_amount, 2 ) ) {
-                edd_coinpayments_ipn_error( $payment_id, sprintf( __( 'Invalid payment amount in IPN response. IPN data: %s', 'edd-coinpayments' ), json_encode( $_POST ) ) );
+                $this->edd_coinpayments_ipn_error( $payment_id, sprintf( __( 'Invalid payment amount in IPN response. IPN data: %s', 'edd-coinpayments' ), json_encode( $_POST ) ) );
             }
     
             if ( $purchase_key != edd_get_payment_key( $payment_id ) ) {
                 // Purchase keys don't match
-                edd_coinpayments_ipn_error( $payment_id, sprintf( __( 'Invalid purchase key in IPN response. IPN data: %s', 'edd-coinpayments' ), json_encode( $_POST ) ) );
+                $this->edd_coinpayments_ipn_error( $payment_id, sprintf( __( 'Invalid purchase key in IPN response. IPN data: %s', 'edd-coinpayments' ), json_encode( $_POST ) ) );
             }
 
             if( $status < 0 ) {
