@@ -1,3 +1,5 @@
+> NOTICE: Migrated to [CoinPaymentsNet/plugin-easy-digital-downloads](https://github.com/CoinPaymentsNet/plugin-easy-digital-downloads).
+
 === Easy Digital Downloads - CoinPayments Gateway ===
 Tags: edd, easy digital downloads, digital downloads, ecommerce, gateway,
 coinpayments
